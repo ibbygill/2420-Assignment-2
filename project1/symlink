@@ -6,8 +6,12 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-MAIN="$(pwd)"
+# create a symbolic link between the users starting file repo that has been cloned.
+# connects it to the ~/bin which is the user's local machine bin, here it will automatically create the folders which are needed. Allowing the user to access them in their bin on their localmachine
+ln -s /home/$USER/2420-as2-starting-files/bin ~/bin
 
-mkdir -p ~/bin
+# creates a symbolic link between the user's starter files to the local machine .config so that the user can access them there. If you do not have .config created it will create it for you.
+ln -s /home/$USER/2420-as2-starting-files/config ~/.config
 
-ln -s "$MAIN/bin/
+# creates a symbolic link between user's bashrc that is installed through the starting files and their local machine ./bashrc, even if they do not have this created. It will create .bashrc for you
+ln -s /home/$USER/2420-as2-starting-files/home/bashrc ~/.bashrc
