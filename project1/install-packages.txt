@@ -1,0 +1,5 @@
+kakoune
+tmux
+htop
+git
+curl

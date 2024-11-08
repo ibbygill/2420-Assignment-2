@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Won't let the script run, if ran as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Use sudo to run this script"
+    exit 1
+fi
+
+# clones the repo
+git clone https://gitlab.com/cit2420/2420-as2-starting-files
+
+# File with package list
+file="install-packages.txt"
+
+# Read and install each package on the text file
+pacman -S --noconfirm - < $file

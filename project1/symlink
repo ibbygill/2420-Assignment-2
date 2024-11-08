@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# checks if the script is being run using sudo
+if [ "$EUID" -ne 0 ]; then
+    echo "Use sudo to run this script"
+    exit 1
+fi
+
+MAIN="$(pwd)"
+
+mkdir -p ~/bin
+
+ln -s "$MAIN/bin/
