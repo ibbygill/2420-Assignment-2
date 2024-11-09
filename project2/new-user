@@ -99,3 +99,19 @@ echo "$USERNAME:$PASSWORD" | chpasswd
 
 # Output success message
 echo "User $USERNAME created successfully with the provided password."
+
+
+#REFERENCES 
+# https://www.cyberciti.biz/faq/understanding-etcshadow-file/
+
+# https://gitlab.com/cit2420/2420-notes-f24/-/blob/main/2420-notes/week-three.md
+
+# https://gitlab.com/cit2420/2420-notes-f24/-/blob/main/2420-notes/week-seven.md
+
+# https://www.youtube.com/watch?v=tQ9VDxCmiKk
+
+# https://www.geeksforgeeks.org/awk-command-unixlinux-examples/
+
+# https://www.golinuxcloud.com/linux-list-users-examples/
+
+# https://www.reddit.com/r/linux/comments/1hfjgl/pulling_uidgid_values_from_active_directory/
