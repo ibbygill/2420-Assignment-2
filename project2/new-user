@@ -1,0 +1,54 @@
+#!/bin/bas0
+
+# checks if the script is being run using sudo
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root."
+    exit 1
+fi
+
+# Parse command-line options for username and password
+while getopts "u:" opt; do
+# This part we
+    case $opt in
+        u)
+            USERNAME="$OPTARG"
+            ;;
+        *)
+            echo "Usage: $0 -u username"
+            exit 1
+            ;;
+    esac
+done
+
+# Check if username and password are provided
+if [ -z "$USERNAME" ]; then
+    echo "A username must be provided."
+    echo "Usage: -u username"
+    exit 1
+fi
+
+if grep "^$USERNAME" /etc/passwd; then
+    echo "User $USERNAME already exists."
+    exit 1
+fi
+
+# Generate the next available UID and GID using awk to find the maximum values
+USER_ID=$(awk -F, 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/passwd)
+GROUP_ID=$(awk -F, 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/group)
+
+
+# Add a primary group for the user
+echo "$USERNAME:x:$GROUP_ID:" >> /etc/group
+
+SHELL="/bin/bash/"
+
+# Add the user entry to /etc/passwd
+echo "$USERNAME:x:$USER_ID:$GROUP_ID::/home/$USERNAME:$SHELL" >> /etc/passwd
+
+# Create the home directory and copy default files
+mkdir -p /home/$USERNAME
+cp -r /etc/skel/. /home/$USERNAME
+chown -R "$USERNAME:$USERNAME" /home/$USERNAME
+
+# Output success message
+echo "User $USERNAME created successfully with the provided password."
