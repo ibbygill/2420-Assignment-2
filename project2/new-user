@@ -7,23 +7,26 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Parse command-line options for username and password
-while getopts "u:" opt; do
-# This part we
-    case $opt in
+# Parse command-line options for username and password
+while getopts "u:p:" opt; do
+    case "${opt}" in
         u)
             USERNAME="$OPTARG"
             ;;
+        p)
+            PASSWORD="$OPTARG"
+            ;;
         *)
-            echo "Usage: $0 -u username"
+            echo "Usage: $0 -u username -p password"
             exit 1
             ;;
     esac
 done
 
 # Check if username and password are provided
-if [ -z "$USERNAME" ]; then
-    echo "A username must be provided."
-    echo "Usage: -u username"
+if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+    echo "A username must be provided and a password."
+    echo "Usage: -u username -p password"
     exit 1
 fi
 
@@ -49,6 +52,9 @@ echo "$USERNAME:x:$USER_ID:$GROUP_ID::/home/$USERNAME:$SHELL" >> /etc/passwd
 mkdir -p /home/$USERNAME
 cp -r /etc/skel/. /home/$USERNAME
 chown -R "$USERNAME:$USERNAME" /home/$USERNAME
+
+# Set the user's password using chpasswd
+echo "$USERNAME:$PASSWORD" | chpasswd
 
 # Output success message
 echo "User $USERNAME created successfully with the provided password."
