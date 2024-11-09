@@ -2,58 +2,99 @@
 
 # checks if the script is being run using sudo
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root."
+# checks the EUID which is a variable that holds the "Effective User ID" of the user running the script, confirming that the script is being run using sudo which is 0
+# If it is then it will run, otherwise it will echo please run as root or tell them to use sudo.
+    echo "Please run as root or use sudo."
     exit 1
 fi
 
 # Parse command-line options for username and password
-# Parse command-line options for username and password
-while getopts "u:p:" opt; do
-    case "${opt}" in
-        u)
+while getopts "u:p:" opt; do # here we are asking for arguments to be provided for -u and -p
+    case "${opt}" in # using case statement so that the different options can be handled
+        u) 
+        # -u is a required argument as stated above, this is for the username
+        # $OPTARG is used to store a varialble, it holds the argument that is supplied to us
             USERNAME="$OPTARG"
             ;;
         p)
+        # -p is the required argument, this is for the password
+        # $OPTARG is used to store the variable for PASSWORD
             PASSWORD="$OPTARG"
             ;;
+        # * is known as "any other option" anything that is not -u -p that the user
+        # If the user enters in a the wrong option we will echo the the below line to tell them how it is 
         *)
             echo "Usage: $0 -u username -p password"
             exit 1
             ;;
-    esac
-done
+    esac 
+    # this is to end the case statement that was started in line 11
+done 
+# this is to end the while loop
 
-# Check if username and password are provided
+# Using if conditional statement to check whether username and password are provided
 if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+# the if statement above checks the string of USERNAME and PASSWORD if they are empty by using -z the || is OR so it checks if one of them empty
+# if empty it will echo the below message that the user needs to provide a username and password
     echo "A username must be provided and a password."
     echo "Usage: -u username -p password"
+# exit 1 is used to terminate the script
     exit 1
 fi
 
-if grep "^$USERNAME" /etc/passwd; then
+# Using if conditional statement to check whether the USERNAME has already been used before. 
+if grep "^$USERNAME" /etc/passwd; then # grep is used to search for patterns inside of the file. we are looking in the passwd file in this scenario.
+# ^ is the anchor that confirms that the match of the USERNAME will happen at the beginning of the line
+# if the USERNAME is found it will echo the line below
     echo "User $USERNAME already exists."
+# exit 1 is used to terminate the script
     exit 1
 fi
 
 # Generate the next available UID and GID using awk to find the maximum values
-USER_ID=$(awk -F, 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/passwd)
-GROUP_ID=$(awk -F, 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/group)
+# Here we are declaring the USER_ID to be the variable, using awk to find the next UID.
+# we call awk at the start, and give it -F which specifies the seperator in the files, in our case we have : in the passwd directory. 
+# We start from 1000, as UID start from 1000 to 65533 and 65535 to 4294967294. It begins searching at 1000 and using $3 to check the 3rd column which is our UID. then using print max +1 we find the max UID in  passwd. 
+# Add 1 to the MAX UID and we give that to USER_ID
+USER_ID=$(awk -F: 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/passwd)
+
+# Here we are declaring the GROUP_ID to be the variable, using awk to find the next GID.
+# we call awk at the start, and give it -F which specifies the seperator in the files, in our case we have : in the passwd directory.
+# It begins searching at 1000 and using $3 to check the 3rd column which is our UID. then using print max +1 we find the max UID in  passwd. 
+# Add 1 to the MAX GID and we give that to GROUP_ID
+GROUP_ID=$(awk -F: 'BEGIN {max=1000} {if ($3 > max) max=$3} END {print max+1}' /etc/group)
 
 
 # Add a primary group for the user
+# here we are appending the $USERNAME and $GROUP_ID
+# the x is a placeholder as it will be encrypted password
+# >> appends it to /etc/group where the other USERNAME:PASSWORD:GROUP_ID are stored in that same formate
 echo "$USERNAME:x:$GROUP_ID:" >> /etc/group
 
+# delcare the default shell that the user will be assigned to. In our case we want the new user to default to /bin/bash
 SHELL="/bin/bash/"
 
 # Add the user entry to /etc/passwd
+# As we did in line 70 we are going to append this information to our /etc/passwd file
+# We set it up into the same format, therefore not causing any issues with the passwd file
 echo "$USERNAME:x:$USER_ID:$GROUP_ID::/home/$USERNAME:$SHELL" >> /etc/passwd
 
 # Create the home directory and copy default files
+# Creates a home directory for the new user
+# Using -p to ensure that errors will not be raised if the directory exissts 
 mkdir -p /home/$USERNAME
+
+# Copying recursively, our /etc/skel to the users new home directory
 cp -r /etc/skel/. /home/$USERNAME
+
+# Changing the owernship of the users home directory to the new user that has been created.
+# chown takes OPTIONS USER:GROUP and FILES so in our case, it sets the ownership of /home/$USERNAME to the newly created home directly.
 chown -R "$USERNAME:$USERNAME" /home/$USERNAME
 
 # Set the user's password using chpasswd
+# This sets the users password into the /etc/shadow file with a HASHED version of the password making sure it is secure.
+# We pipe the USERNAME:PASSWORD in that same format as chpasswd will only take in that input format.
+# chpasswd hashes it using the SHA-512 algorithm.
 echo "$USERNAME:$PASSWORD" | chpasswd
 
 # Output success message
